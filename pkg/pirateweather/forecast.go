@@ -17,6 +17,7 @@ const (
 )
 
 // Forecast retrieves the weather forecast for a given location
+// It takes latitude and longitude as parameters, along with optional ForecastOptions
 func (c *Client) Forecast(latitude, longitude float64, options ...ForecastOption) (*models.ForecastResponse, error) {
 	url := fmt.Sprintf("%s/%s/%f,%f", c.BaseURL, c.APIKey, latitude, longitude)
 
@@ -25,6 +26,7 @@ func (c *Client) Forecast(latitude, longitude float64, options ...ForecastOption
 		return nil, fmt.Errorf("error creating request: %w", err)
 	}
 
+	// Apply all provided options to the request
 	for _, option := range options {
 		option(req)
 	}
@@ -32,9 +34,12 @@ func (c *Client) Forecast(latitude, longitude float64, options ...ForecastOption
 	var resp *http.Response
 	var forecast models.ForecastResponse
 
+	// Retry logic for handling transient errors
 	for i := 0; i < maxRetries; i++ {
 		if !c.RateLimiter.Allow() {
-			return nil, fmt.Errorf("rate limit exceeded")
+			return nil, &RateLimitError{
+				Message: "rate limit exceeded",
+			}
 		}
 
 		resp, err = c.HTTPClient.Do(req)
@@ -43,30 +48,40 @@ func (c *Client) Forecast(latitude, longitude float64, options ...ForecastOption
 		}
 		defer resp.Body.Close()
 
-		if resp.StatusCode == http.StatusOK {
-			break
+		// Handle different response status codes
+		switch resp.StatusCode {
+		case http.StatusOK:
+			if err := json.NewDecoder(resp.Body).Decode(&forecast); err != nil {
+				return nil, &JSONError{
+					Message: fmt.Sprintf("error decoding response: %v", err),
+				}
+			}
+			c.updateRateLimiter(resp.Header)
+			return &forecast, nil
+		case http.StatusBadRequest:
+			return nil, fmt.Errorf("bad request: invalid latitude or longitude")
+		case http.StatusUnauthorized:
+			return nil, fmt.Errorf("unauthorized: invalid API key or insufficient permissions")
+		case http.StatusNotFound:
+			return nil, fmt.Errorf("not found: invalid route or missing latitude/longitude")
+		case http.StatusTooManyRequests:
+			return nil, fmt.Errorf("rate limit exceeded: API key has hit the quota for the month")
+		case http.StatusInternalServerError:
+			if i == maxRetries-1 {
+				return nil, fmt.Errorf("API request failed after %d retries: internal server error", maxRetries)
+			}
+			time.Sleep(retryDelay)
+		default:
+			return nil, &APIError{
+				Message: fmt.Sprintf("API request failed with unexpected status code: %d", resp.StatusCode),
+			}
 		}
-
-		if resp.StatusCode != http.StatusInternalServerError {
-			return nil, fmt.Errorf("API request failed with status code: %d", resp.StatusCode)
-		}
-
-		time.Sleep(retryDelay)
 	}
 
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("API request failed after %d retries", maxRetries)
-	}
-
-	if err := json.NewDecoder(resp.Body).Decode(&forecast); err != nil {
-		return nil, fmt.Errorf("error decoding response: %w", err)
-	}
-
-	c.updateRateLimiter(resp.Header)
-
-	return &forecast, nil
+	return nil, fmt.Errorf("API request failed after %d retries", maxRetries)
 }
 
+// updateRateLimiter updates the rate limiter based on the response headers
 func (c *Client) updateRateLimiter(headers http.Header) {
 	limit, _ := strconv.Atoi(headers.Get("Ratelimit-Limit"))
 	remaining, _ := strconv.Atoi(headers.Get("Ratelimit-Remaining"))

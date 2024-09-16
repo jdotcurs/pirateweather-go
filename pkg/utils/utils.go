@@ -27,7 +27,7 @@ func ConvertTemperature(temp float64, fromUnit, toUnit string) (float64, error) 
 	}
 }
 
-// ConvertUnit converts between different units
+// ConvertUnit converts between different units of measurement
 func ConvertUnit(value float64, fromUnit, toUnit string) (float64, error) {
 	switch {
 	case fromUnit == "km" && toUnit == "mi":

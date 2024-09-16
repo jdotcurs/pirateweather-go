@@ -5,6 +5,7 @@ import (
 	"time"
 )
 
+// RateLimiter represents a rate limiter for API requests
 type RateLimiter struct {
 	mu           sync.Mutex
 	limit        int
@@ -13,6 +14,7 @@ type RateLimiter struct {
 	lastResetted time.Time
 }
 
+// NewRateLimiter creates a new RateLimiter with the given limit
 func NewRateLimiter(limit int) *RateLimiter {
 	return &RateLimiter{
 		limit:        limit,
@@ -22,6 +24,7 @@ func NewRateLimiter(limit int) *RateLimiter {
 	}
 }
 
+// Allow checks if a request is allowed based on the current rate limit
 func (rl *RateLimiter) Allow() bool {
 	rl.mu.Lock()
 	defer rl.mu.Unlock()
@@ -40,6 +43,7 @@ func (rl *RateLimiter) Allow() bool {
 	return false
 }
 
+// UpdateFromHeaders updates the rate limiter based on the API response headers
 func (rl *RateLimiter) UpdateFromHeaders(limit, remaining int, reset time.Time) {
 	rl.mu.Lock()
 	defer rl.mu.Unlock()

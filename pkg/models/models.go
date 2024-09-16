@@ -99,6 +99,7 @@ type Flags struct {
 	Version        string            `json:"version"`
 }
 
+// SourceIDX represents the source index information
 type SourceIDX struct {
 	X         int     `json:"x"`
 	Y         int     `json:"y"`

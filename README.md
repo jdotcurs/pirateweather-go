@@ -24,6 +24,7 @@ Pirate Weather Go SDK is a robust, feature-rich Go client library for the Pirate
 
 To install the Pirate Weather Go SDK, use the following command:
 
+
 ```bash
 go get github.com/jdotcurs/pirateweather-go
 ```
@@ -97,6 +98,113 @@ pirateweather.WithVersion(2),
 )
 ```
 
+### Time Machine Requests with Different Times
+
+You can request weather data for a specific time in the past or future:
+
+```go
+pastTime := time.Now().AddDate(-1, 0, 0) // One year ago
+forecast, err := client.TimeMachine(45.42, -75.69, pastTime,
+    pirateweather.WithUnits("si"),
+    pirateweather.WithExclude([]string{"minutely"}),
+)
+```
+
+### Using Different Unit Systems
+
+The SDK supports four unit systems: si (SI units), us (Imperial units), uk (UK units), and ca (Canada units). Here's how to use them:
+
+```go
+// SI units (default)
+forecast, err := client.Forecast(45.42, -75.69, pirateweather.WithUnits("si"))
+
+// US units
+forecast, err := client.Forecast(45.42, -75.69, pirateweather.WithUnits("us"))
+
+// UK units
+forecast, err := client.Forecast(45.42, -75.69, pirateweather.WithUnits("uk"))
+
+// Canada units
+forecast, err := client.Forecast(45.42, -75.69, pirateweather.WithUnits("ca"))
+```
+
+### Excluding Data Blocks
+You can exclude specific data blocks to reduce the amount of data returned:
+
+```go
+forecast, err := client.Forecast(45.42, -75.69,
+    pirateweather.WithExclude([]string{"minutely", "hourly", "daily", "alerts"}),
+)
+```
+
+### Using API Version 2
+
+Version 2 of the API includes additional fields such as fireIndex, smoke, dawnTime, and duskTime:
+
+```go
+forecast, err := client.Forecast(45.42, -75.69,
+    pirateweather.WithVersion(2),
+)
+```
+
+### Handling Rate Limits
+
+The SDK automatically handles rate limiting. If you exceed the rate limit, the Forecast and TimeMachine methods will return an error:
+
+```go
+forecast, err := client.Forecast(45.42, -75.69)
+if err != nil {
+    if strings.Contains(err.Error(), "rate limit exceeded") {
+        // Handle rate limit error
+    } else {
+        // Handle other errors
+    }
+}
+```
+
+### Error Handling
+
+The SDK includes retry logic for transient errors. If an API request fails after multiple retries, an error will be returned:
+
+```go
+forecast, err := client.Forecast(45.42, -75.69)
+if err != nil {
+    if strings.Contains(err.Error(), "API request failed after") {
+        // Handle API failure error
+    } else {
+        // Handle other errors
+    }
+}
+```
+
+## Go Techniques Showcase
+
+This SDK demonstrates several advanced Go techniques and best practices, making it an excellent portfolio piece for aspiring Go developers:
+
+### Concurrent API Handling
+- Utilizes Go's powerful concurrency primitives for efficient API requests
+- Implements a custom rate limiter to manage concurrent requests while respecting API limits
+
+### Robust Error Management
+- Custom error types for different scenarios (APIError, RateLimitError, JSONError)
+- Comprehensive error handling with detailed error messages
+
+### Comprehensive Testing
+- Extensive unit tests for all major components (see client_test.go and forecast_test.go)
+- Mock client implementation for testing API interactions without network calls
+- Table-driven tests for thorough coverage of different scenarios
+
+### Flexible API Design
+- Functional options pattern for customizable API requests (see WithUnits, WithExclude, WithExtend, WithVersion)
+- Chainable method calls for intuitive SDK usage
+
+### Type Safety and Generics
+- Leverages Go's type system for compile-time safety
+- Utilizes generics for reusable, type-safe utility functions (e.g., ConvertTemperature and ConvertUnit in utils.go)
+
+### Modular Architecture
+- Well-organized package structure for easy maintenance and scalability
+- Clear separation of concerns between client, models, and utilities
 
 ## Contributing
 
@@ -127,6 +235,3 @@ If you find this SDK helpful, consider supporting the Pirate Weather project. Do
 ## Disclaimer
 
 This SDK is not officially associated with Pirate Weather. It's an independent, open-source project aimed at providing a Go interface to the Pirate Weather API.
-
-
-

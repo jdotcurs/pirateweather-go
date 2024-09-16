@@ -27,7 +27,9 @@ func (c *Client) TimeMachine(latitude, longitude float64, timestamp time.Time, o
 
 	for i := 0; i < maxRetries; i++ {
 		if !c.RateLimiter.Allow() {
-			return nil, fmt.Errorf("rate limit exceeded")
+			return nil, &RateLimitError{
+				Message: "rate limit exceeded",
+			}
 		}
 
 		resp, err = c.HTTPClient.Do(req)
@@ -41,18 +43,24 @@ func (c *Client) TimeMachine(latitude, longitude float64, timestamp time.Time, o
 		}
 
 		if resp.StatusCode != http.StatusInternalServerError {
-			return nil, fmt.Errorf("API request failed with status code: %d", resp.StatusCode)
+			return nil, &APIError{
+				Message: fmt.Sprintf("API request failed with status code: %d", resp.StatusCode),
+			}
 		}
 
 		time.Sleep(retryDelay)
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("API request failed after %d retries", maxRetries)
+		return nil, &APIError{
+			Message: fmt.Sprintf("API request failed after %d retries", maxRetries),
+		}
 	}
 
 	if err := json.NewDecoder(resp.Body).Decode(&forecast); err != nil {
-		return nil, fmt.Errorf("error decoding response: %w", err)
+		return nil, &JSONError{
+			Message: fmt.Sprintf("error decoding response: %v", err),
+		}
 	}
 
 	c.updateRateLimiter(resp.Header)
