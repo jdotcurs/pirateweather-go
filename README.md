@@ -67,9 +67,6 @@ To use this SDK, you need to obtain an API key from [Pirate Weather](https://pir
 
 **Important**: Keep your API key secret and never commit it to version control.
 
-## Documentation
-
-For detailed documentation on all available methods and options, please refer to the [GoDoc](https://pkg.go.dev/github.com/jdotcurs/pirateweather-go).
 
 ## Advanced Usage
 
