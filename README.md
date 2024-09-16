@@ -179,8 +179,6 @@ if err != nil {
 
 ## Go Techniques Showcase
 
-This SDK demonstrates several advanced Go techniques and best practices, making it an excellent portfolio piece for aspiring Go developers:
-
 ### Concurrent API Handling
 - Utilizes Go's powerful concurrency primitives for efficient API requests
 - Implements a custom rate limiter to manage concurrent requests while respecting API limits
