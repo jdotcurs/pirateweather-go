@@ -37,7 +37,7 @@ func NewClient(apiKey string) *Client {
 			Timeout: time.Second * 10,
 		},
 		BaseURL:     baseURL,
-		RateLimiter: NewRateLimiter(10000 / 30), // Default limit of 10000 requests per month
+		RateLimiter: NewRateLimiter(10000), // Default limit of 10000 requests per month
 		Cache:       NewCache(),
 	}
 }

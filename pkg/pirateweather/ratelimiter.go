@@ -9,18 +9,18 @@ import (
 type RateLimiter struct {
 	mu           sync.Mutex
 	limit        int
-	remaining    int
-	resetTime    time.Time
-	lastResetted time.Time
+	tokens       float64
+	lastRefilled time.Time
+	refillRate   float64
 }
 
 // NewRateLimiter creates a new RateLimiter with the given limit
 func NewRateLimiter(limit int) *RateLimiter {
 	return &RateLimiter{
 		limit:        limit,
-		remaining:    limit,
-		resetTime:    time.Now().Add(time.Hour * 24),
-		lastResetted: time.Now(),
+		tokens:       float64(limit),
+		lastRefilled: time.Now(),
+		refillRate:   float64(limit) / (30 * 24 * 60 * 60), // Tokens per second for a month
 	}
 }
 
@@ -30,14 +30,12 @@ func (rl *RateLimiter) Allow() bool {
 	defer rl.mu.Unlock()
 
 	now := time.Now()
-	if now.After(rl.resetTime) {
-		rl.remaining = rl.limit
-		rl.resetTime = now.Add(time.Hour * 24)
-		rl.lastResetted = now
-	}
+	elapsed := now.Sub(rl.lastRefilled).Seconds()
+	rl.tokens = min(float64(rl.limit), rl.tokens+elapsed*rl.refillRate)
+	rl.lastRefilled = now
 
-	if rl.remaining > 0 {
-		rl.remaining--
+	if rl.tokens >= 1 {
+		rl.tokens--
 		return true
 	}
 	return false
@@ -49,6 +47,14 @@ func (rl *RateLimiter) UpdateFromHeaders(limit, remaining int, reset time.Time) 
 	defer rl.mu.Unlock()
 
 	rl.limit = limit
-	rl.remaining = remaining
-	rl.resetTime = reset
+	rl.tokens = float64(remaining)
+	rl.lastRefilled = time.Now()
+	rl.refillRate = float64(limit) / time.Until(reset).Seconds()
+}
+
+func min(a, b float64) float64 {
+	if a < b {
+		return a
+	}
+	return b
 }
