@@ -17,6 +17,7 @@ Pirate Weather Go SDK is a robust, feature-rich Go client library for the Pirate
 - Customizable units (SI, Imperial, etc.)
 - Extensive error handling and retry logic
 - Rate limiting to respect API constraints
+- Caching of forecast and time machine requests to reduce API usage and improve performance
 - Comprehensive test suite with mocking
 - Detailed documentation and examples
 

@@ -11,6 +11,11 @@ import (
 
 // TimeMachine retrieves historical weather data for a given location and time
 func (c *Client) TimeMachine(latitude, longitude float64, timestamp time.Time, options ...ForecastOption) (*models.ForecastResponse, error) {
+	cacheKey := fmt.Sprintf("timemachine:%f:%f:%d:%v", latitude, longitude, timestamp.Unix(), options)
+	if cachedForecast, found := c.Cache.Get(cacheKey); found {
+		return cachedForecast.(*models.ForecastResponse), nil
+	}
+
 	url := fmt.Sprintf("%s/%s/%f,%f,%d", c.BaseURL, c.APIKey, latitude, longitude, timestamp.Unix())
 
 	req, err := http.NewRequest("GET", url, nil)
@@ -63,6 +68,7 @@ func (c *Client) TimeMachine(latitude, longitude float64, timestamp time.Time, o
 		}
 	}
 
+	c.Cache.Set(cacheKey, &forecast, time.Hour) // Cache for 1 hour
 	c.updateRateLimiter(resp.Header)
 
 	return &forecast, nil

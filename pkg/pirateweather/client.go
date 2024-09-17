@@ -6,6 +6,16 @@ import (
 	"time"
 )
 
+var timeNow = time.Now
+
+func SetTimeNow(f func() time.Time) {
+	timeNow = f
+}
+
+func ResetTimeNow() {
+	timeNow = time.Now
+}
+
 const (
 	baseURL = "https://api.pirateweather.net/forecast"
 )
@@ -16,6 +26,7 @@ type Client struct {
 	HTTPClient  *http.Client
 	BaseURL     string
 	RateLimiter *RateLimiter
+	Cache       *Cache
 }
 
 // NewClient creates a new Pirate Weather API client with the given API key
@@ -27,5 +38,6 @@ func NewClient(apiKey string) *Client {
 		},
 		BaseURL:     baseURL,
 		RateLimiter: NewRateLimiter(10000 / 30), // Default limit of 10000 requests per month
+		Cache:       NewCache(),
 	}
 }

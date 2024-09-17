@@ -19,6 +19,11 @@ const (
 // Forecast retrieves the weather forecast for a given location
 // It takes latitude and longitude as parameters, along with optional ForecastOptions
 func (c *Client) Forecast(latitude, longitude float64, options ...ForecastOption) (*models.ForecastResponse, error) {
+	cacheKey := fmt.Sprintf("forecast:%f:%f:%v", latitude, longitude, options)
+	if cachedForecast, found := c.Cache.Get(cacheKey); found {
+		return cachedForecast.(*models.ForecastResponse), nil
+	}
+
 	url := fmt.Sprintf("%s/%s/%f,%f", c.BaseURL, c.APIKey, latitude, longitude)
 
 	req, err := http.NewRequest("GET", url, nil)
@@ -57,6 +62,7 @@ func (c *Client) Forecast(latitude, longitude float64, options ...ForecastOption
 				}
 			}
 			c.updateRateLimiter(resp.Header)
+			c.Cache.Set(cacheKey, &forecast, time.Hour) // Cache for 1 hour
 			return &forecast, nil
 		case http.StatusBadRequest:
 			return nil, fmt.Errorf("bad request: invalid latitude or longitude")
