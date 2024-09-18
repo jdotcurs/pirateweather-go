@@ -46,9 +46,9 @@ func ReverseGeocode(latitude, longitude float64) (*GeocodingResult, error) {
 }
 
 type ForwardGeocodingResult struct {
-	Lat         float64 `json:"lat"`
-	Lon         float64 `json:"lon"`
-	DisplayName string  `json:"display_name"`
+	Lat         string `json:"lat"`
+	Lon         string `json:"lon"`
+	DisplayName string `json:"display_name"`
 }
 
 func ForwardGeocode(address string) (*ForwardGeocodingResult, error) {
